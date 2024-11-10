@@ -1,3 +1,5 @@
+#!/bin/env python
+# -*- coding: UTF-8 -*-
 # twitch-chat-bot
 import os
 import time
@@ -6,7 +8,7 @@ from twitchio.ext import commands
 from gtts import gTTS
 import asyncio
 
-from config.auth import TOKEN, TELEGRAM_URL, YOUTUBE_URL, INSTAGRAM_URL
+from config.auth import TOKEN, TELEGRAM_URL, YOUTUBE_URL, INSTAGRAM_URL, ID
 
 # Track the bot's start time for uptime calculations
 start_time = time.time()
@@ -16,7 +18,7 @@ languages = {
     "en": {
         "hello": "Hello",
         "uptime": "I've been up for {hours} hours, {minutes} minutes, and {seconds:.2f} seconds.",
-        "telegram": f"Join our community on Telegram at {TELEGRAM_URL}!",
+        "telegram": f"Join our community on Telegram at {TELEGRAM_URL}",
         "youtube": f"Check out my YouTube channel at {YOUTUBE_URL}",
         "instagram": f"Follow me on Instagram at {INSTAGRAM_URL}",
         "help": "**Available commands:**\n"
@@ -81,7 +83,7 @@ class Bot(commands.Bot):
             await ctx.send(f"Invalid language. Choose 'en' or 'es'.")
             return
         self.current_language = language.lower()
-        await ctx.send(f"Language set to {language.upper()}.")
+        await ctx.send(f"{ctx.author.name} set language to {language.upper()}.")
         self.user_languages[ctx.author.id] = language.lower()
         with open('user_languages.json', 'w') as f:
             json.dump(self.user_languages, f)
@@ -102,24 +104,41 @@ class Bot(commands.Bot):
         await ctx.send(languages[user_lang]["help"])
 
     @commands.command()
+    async def me(self, ctx: commands.Context):
+        """Greets the user who invoked the command."""
+        user_lang = self.user_languages.get(ctx.author.id, self.current_language)
+        await ctx.send(ctx.author.name)
+        # await ctx.send(f"Hello, {ctx.author.name}! ")
+
+    @commands.command()
     async def hello(self, ctx: commands.Context):
         """Greets the user who invoked the command."""
         user_lang = self.user_languages.get(ctx.author.id, self.current_language)
         await ctx.send(languages[user_lang]["hello"] + ", " + ctx.author.name + "!")
         # await ctx.send(f"Hello, {ctx.author.name}! ")
 
-    # @commands.command()
-    # async def uptime(self, ctx: commands.Context):
-    #     """Displays the bot's uptime."""
-    #     now = time.time()
-    #     uptime = now - start_time
-    #     hours, remainder = divmod(int(uptime), 3600)
-    #     minutes, seconds = divmod(remainder, 60)
-    #     message = languages[self.current_language]["uptime"].format(
-    #         hours=hours, minutes=minutes, seconds=seconds
-    #     )
-    #     await ctx.send(message)
-    #     # await ctx.send(f"I've been up for {hours} hours, {minutes} minutes, and {seconds:.2f} seconds.")
+    @commands.command()
+    async def uptime(self, ctx: commands.Context):
+        """Displays the bot's uptime."""
+        if ctx.author.id == ID:
+            now = time.time()
+            uptime = now - start_time
+            hours, remainder = divmod(int(uptime), 3600)
+            minutes, seconds = divmod(remainder, 60)
+            message = languages[self.current_language]["uptime"].format(
+                hours=hours, minutes=minutes, seconds=seconds
+            )
+            await ctx.send(message)
+            # await ctx.send(f"I've been up for {hours} hours, {minutes} minutes, and {seconds:.2f} seconds.")
+        else:
+           await ctx.send("This command is only accessible to the streamer.")
+
+    @commands.command()
+    async def secret_command(self, ctx: commands.Context):
+        if ctx.author.id == ID:
+            await ctx.send("This is a secret command, only for admins.")
+        else:
+            await ctx.send("This command is only accessible to the streamer.")
 
     @commands.command()
     async def telegram(self, ctx: commands.Context):
@@ -167,6 +186,11 @@ class Bot(commands.Bot):
         full_message = f"{ctx.author.name}, {message}"
         await self.speak(ctx, full_message)
 
+    # @bot.event
+    async def event_command_error(self, ctx, error):
+        """Handles errors related to unmatched commands."""
+        if isinstance(error, commands.CommandNotFound):
+            await ctx.send(f"Command '{ctx.invoked_with}' not found. Try '!help' for a list of commands.")
 
 if __name__ == "__main__":
     bot = Bot()

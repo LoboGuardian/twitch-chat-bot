@@ -11,10 +11,11 @@ TOKEN = os.getenv("TOKEN")
 TELEGRAM_URL = os.getenv('TELEGRAM_URL')
 YOUTUBE_URL = os.getenv('YOUTUBE_URL')
 INSTAGRAM_URL = os.getenv('INSTAGRAM_URL')
+ID = os.getenv("ID")
 
 # Validate essential environment variables
 if not TOKEN:
-    raise ValueError("The Telegram bot TOKEN is missing from the environment variables.")
+    raise ValueError("The TOKEN is missing from the environment variables.")
 
 if not TELEGRAM_URL:
     raise ValueError("The Telegram URL is missing from the environment variables.")
